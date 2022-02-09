@@ -5,6 +5,7 @@ LastEditTime: 2022-01-15 22:03:06
 '''
 import base64
 import logging
+import threading
 import time
 
 import requests
@@ -41,6 +42,12 @@ class hdu_jwc:
         self.session = requests.Session()
         self.xuanke = ""
         self.index = ""
+        self.class_list = []
+        self.dict = {
+            "01": "D3CA48E77A1A4CD8E0536164A8C05380",
+            "10": "D3C989F2C90BEA2DE0536164A8C0923B",
+            "05": "D3DDE00D83CA15A1E0536264A8C0CBAE",
+        }
 
     def set_pubKey(self):
         try:
@@ -65,7 +72,7 @@ class hdu_jwc:
         self.headers["Cookie"] = "JSESSIONID={}; route={}".format(
             self.session.cookies["JSESSIONID"], self.session.cookies["route"])
         # self.headers["Cookie"]=self.session.cookies
-        page = BeautifulSoup(response.text)
+        page = BeautifulSoup(response.text, features="html.parser")
         self.cookies = response.cookies
         self.csrftoken = page.find("input", attrs={"id": "csrftoken"})["value"]
         logging.info("set csrftoken success!")
@@ -82,8 +89,7 @@ class hdu_jwc:
                 time.time() * 1000)), headers=self.headers, data=params, cookies=self.session.cookies,
                                          allow_redirects=False)
             self.cookies = response.cookies
-            raise ConnectionError("connect failed!")
-        except ConnectionError as error:
+        except requests.exceptions.ConnectionError as error:
             logging.error(error)
             raise error
         try:
@@ -107,8 +113,7 @@ class hdu_jwc:
         return
 
     def login_course_selection(self):
-        self.login()
-        page = BeautifulSoup(self.index.text)
+        page = BeautifulSoup(self.index.text, features="html.parser")
         link = page.find('a', text="自主选课")
         if len(link) == 0:
             logging.error("enter xuanke failed!")
@@ -122,9 +127,11 @@ class hdu_jwc:
             return response
 
     def logout(self):
+        params = {"t": str(round(time.time() * 1000)), "login_type": ""}
+        self.session.get(url=self.url + "/logout", params=params)
         pass
 
-    def query_margin(self, jxb_id, rwlx="1", index=0):
+    def query_margin(self, jxb_id, kklxdm, rwlx="2", index=0):
         data1 = \
             {
                 "filter_list": [jxb_id],
@@ -158,7 +165,7 @@ class hdu_jwc:
                 "tykczgxdcs": "1",
                 "xkxnm": "2021",
                 "xkxqm": "12",
-                "kklxdm": "01",
+                "kklxdm": kklxdm,
                 "rlkz": "0",
                 "xkzgbj": "0",
                 "kspage": "1",
@@ -195,10 +202,10 @@ class hdu_jwc:
                 "xkxqm": "12",
                 "xkxskcgskg": "0",
                 "rlkz": "0",
-                "kklxdm": "01",
+                "kklxdm": kklxdm,
                 "kch_id": jxb_id,
                 "jxbzcxskg": "0",
-                "xkkz_id": "D3CA48E77A1A4CD8E0536164A8C05380",
+                "xkkz_id": self.dict[kklxdm],
                 "cxbj": "0",
                 "fxbj": "0"
             }
@@ -208,28 +215,27 @@ class hdu_jwc:
                               params=params).json()["tmpList"]
         res2 = self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzbjk_cxJxbWithKchZzxkYzb.html",
                                  data=data2, params=params).json()
+        if index >= len(res1) or index >= len(res2):
+            raise IndexError("不存在该节课")
         return [res1[index], res2[index]]
 
-    def qiangke(self, jxb_id, rwlx=1, index=0, interval=1, times=1000):
-
-        res = self.query_margin(jxb_id, rwlx, index)
-        res1 = res[0]
-        res2 = res[1]
+    def qiangke(self, index, times=1000, interval=1):
+        (res1, res2) = self.class_list[index]
         data = {
             "jxb_ids": res2["do_jxb_id"],
             "kch_id": res1["kch_id"],
             "kcmc": res1["kcmc"],  # not same completely
-            "rwlx": str(rwlx),
+            "rwlx": rwlx,
             "rlkz": "0",
             "rlzlkz": "1",
             "sxbj": "1",
             "xxkbj": res1["xxkbj"],
             "qz": "0",
             "cxbj": res1["cxbj"],
-            "xkkz_id": "D3CA48E77A1A4CD8E0536164A8C05380",
+            "xkkz_id": self.dict[kklxdm],
             "njdm_id": "2020",
             "zyh_id": "0523",
-            "kklxdm": '01'
+            "kklxdm": kklxdm
         }
         params = {"gnmkdm": "N253512", "su": self.username}
         res = {"flag": 0}
@@ -237,26 +243,79 @@ class hdu_jwc:
             res = self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzbjk_xkBcZyZzxkYzb.html", data=data,
                                     params=params).json()
             logging.info("cnt={}: ".format(cnt) + str(res))
-            cnt = cnt + 1
             time.sleep(interval)
-        return res
+            if res["flag"] == "1":
+                self.class_list.remove((res1, res2))
+                return 1
+        return -1
+
+    def add_to_list(self, jxb_id, index, kklxdm, rwlx):
+        try:
+            [res1, res2] = self.query_margin(jxb_id, rwlx=rwlx, index=index - 1, kklxdm=kklxdm)
+        except IndexError as error:
+            logging.warning("课程编号为{}的课程中不存在第{}个教学班".format(jxb_id, index))
+            print("课程编号为{}的课程中不存在第{}个教学班".format(jxb_id, index))
+            return -1
+        teacher_name = res2["jsxx"]
+        class_time = res2["sksj"]
+        already_picked = res1["yxzrs"]
+        total = res2["jxbrl"]
+        print("课程查找成功！\n请确认信息是否正确：")
+        print("\n" * 2)
+        print(
+            "课程编号为{}\n教师姓名为：{}\n上课时间为：{}\n已选/容量：{}/{}".format(jxb_id, teacher_name, class_time, already_picked, total))
+        print("\n" * 2)
+        if input("输入yes以确认：") == "yes":
+            self.class_list.append((res1, res2))
+            print("添加成功！")
+            return 1
+
+    def run(self):
+        temp = []
+        while len(self.class_list):
+            for index in range(len(self.class_list)):
+                th = threading.Thread(target=self.qiangke, args=[index])
+                th.start()
+                temp.append(th)
+            for th in temp:
+                th.join()
+            temp.clear()
+            self.logout()
+            self.set_pubKey()
+            self.set_csrftoken()
+            self.login()
+            self.login_course_selection()
+        print("所有课均已选上！")
 
 
 if __name__ == "__main__":
-    exit_flag = False
-    while exit_flag == False:
+    flag = 0
+    while flag == 0:
         username = input("input your username:\n")
         password = bytes(input("input your password:\n"), encoding="utf-8")
         ex = hdu_jwc(username, password)
         try:
             ex.set_pubKey()
-            ex.get_csrftoken()
+            ex.set_csrftoken()
             ex.login()
             ex.login_course_selection()
+            flag = 1
         except ValueError as error:
             print("username or password error, please check them and try again")
             print("=" * 100)
+            continue
         except ConnectionError:
             print("connect fail, please try later")
             print("=" * 100)
             exit_flag = True
+            continue
+    class_cnt = int(input("请输入待选课数量："))
+    class_real_cnt = 0
+    while class_cnt != class_real_cnt:
+        jxb_id = input("请输入课程代码：")
+        rwlx = input("请输入任务类型代码（主修为1，其它为2）：")
+        kklxdm = input("请输入开课类型代码（主修是01，通识选修是10，体育是05，特殊是09）：")
+        index = input("请输入待选课在本代码中的次序（选课系统中的位次，从1开始）：")
+        if ex.add_to_list(jxb_id, int(index), rwlx=rwlx, kklxdm=kklxdm) == 1:
+            class_real_cnt = class_real_cnt + 1
+    ex.run()
