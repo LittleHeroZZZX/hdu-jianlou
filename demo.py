@@ -1,9 +1,10 @@
 '''
 Auther: littleherozzzx
 Date: 2022-01-13 16:48:51
-LastEditTime: 2022-01-15 22:03:06
+LastEditTime: 2022-02-18 22:45:07
 '''
 import base64
+import json
 import logging
 import threading
 import time
@@ -59,7 +60,7 @@ class hdu_jwc:
             self.pub_key = rsa.PublicKey(int.from_bytes(
                 self.modulus, 'big'), int.from_bytes(self.exponent, 'big'))
             logging.info("set pubKey success!")
-        except requests.exceptions.JSONDecodeError:
+        except json.decoder.JSONDecodeError:
             raise ConnectionError("connect failed")
 
     def encoded(self, s):
@@ -290,6 +291,7 @@ class hdu_jwc:
 
 if __name__ == "__main__":
     flag = 0
+    exit_flag = True
     while flag == 0:
         username = input("input your username:\n")
         password = bytes(input("input your password:\n"), encoding="utf-8")
@@ -305,9 +307,10 @@ if __name__ == "__main__":
             print("=" * 100)
             continue
         except ConnectionError:
-            print("connect fail, please try later")
+            print("connect fail, please try later!")
             print("=" * 100)
             exit_flag = True
+            exit(0)
             continue
     class_cnt = int(input("请输入待选课数量："))
     class_real_cnt = 0
