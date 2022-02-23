@@ -243,7 +243,10 @@ class hdu_jwc:
         for cnt in range(times):
             res = self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzbjk_xkBcZyZzxkYzb.html", data=data,
                                     params=params).json()
-            logging.info("cnt={}: ".format(cnt) + str(res))
+            if res["flag"] == -1:
+                logging.info("当前人数已满！")
+            else:
+                logging.info("cnt={}: ".format(cnt) + str(res))
             time.sleep(interval)
             if res["flag"] == "1":
                 self.class_list.remove((res1, res2))
