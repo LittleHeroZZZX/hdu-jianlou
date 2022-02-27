@@ -6,6 +6,8 @@ LastEditTime: 2022-02-18 22:45:07
 import base64
 import json
 import logging
+import os.path
+import sys
 import threading
 import time
 
@@ -13,13 +15,15 @@ import requests
 import rsa
 from bs4 import BeautifulSoup
 
+import config
+
 logging.basicConfig(level=logging.INFO)
 
 
 class hdu_jwc:
-    def __init__(self, username, password) -> None:
-        self.username = username
-        self.password = password
+    def __init__(self) -> None:
+        self.username = ""
+        self.password = ""
         self.url = "http://newjw.hdu.edu.cn/jwglxt"
         self.headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -49,6 +53,40 @@ class hdu_jwc:
             "10": "D3C989F2C90BEA2DE0536164A8C0923B",
             "05": "D3DDE00D83CA15A1E0536264A8C0CBAE",
         }
+        self.cfg = config.Cfg()
+
+    def load_cfg(self, cfg_file):
+        try:
+            if self.cfg.load_cfg(cfg_file) == 1:
+                logging.info("配置文件加载成功！")
+                return 1
+        except FileNotFoundError:
+            logging.error(f"配置文件加载失败！文件{cfg_file}不存在！")
+            logging.info("请重新生成配置文件。")
+            return 0
+        except ValueError as error:
+            logging.error("配置文件加载失败！")
+            logging.error(error)
+            logging.info("请重新生成配置文件。")
+            return 0
+        except KeyError as error:
+            logging.error("配置文件加载失败！")
+            logging.error(error)
+            logging.info("请重新生成配置文件。")
+            return 0
+
+    def init_cfg(self):
+        page_file = input("请输入网页文件路径（网页文件获取方式请查看readme）:\n")
+        while (not os.path.exists(page_file)):
+            page_file = input("文件不存在，请重新输入！")
+        try:
+            if self.cfg.init_cfg(page_file) == 1:
+                print("配置文件生成成功！")
+                return 1
+        except KeyError as error:
+            logging.error("配置文件生成失败！")
+            logging.error(error)
+            logging.info("请按照readme中要求获取网页文件，或手动在config.json中添加缺失项。")
 
     def set_pubKey(self):
         try:
@@ -59,7 +97,7 @@ class hdu_jwc:
             self.exponent = base64.b64decode(data["exponent"])
             self.pub_key = rsa.PublicKey(int.from_bytes(
                 self.modulus, 'big'), int.from_bytes(self.exponent, 'big'))
-            logging.info("set pubKey success!")
+            logging.info("公钥设置成功!")
         except json.decoder.JSONDecodeError:
             raise ConnectionError("connect failed")
 
@@ -76,7 +114,7 @@ class hdu_jwc:
         page = BeautifulSoup(response.text, features="html.parser")
         self.cookies = response.cookies
         self.csrftoken = page.find("input", attrs={"id": "csrftoken"})["value"]
-        logging.info("set csrftoken success!")
+        logging.info("csrftoken设置成功!")
 
     def login(self):
         encoded_password = self.encoded(self.password).decode("utf-8")
@@ -97,18 +135,18 @@ class hdu_jwc:
             if response.status_code == 302:
                 self.index = self.session.get(url=response.headers["Location"])
                 if self.username in self.index.text:
-                    logging.info("login success")
+                    logging.info("登录成功")
                 else:
                     raise RuntimeError("unknown error!")
             else:
                 if "不正确" in response.text:
-                    raise ValueError("username or password error!")
+                    raise ValueError("学号或密码错误!")
         except ValueError as error:
-            logging.error("current username is {}, current password is {}".format(self.username, self.password))
+            logging.error("当前学号为 {}, 当前密码为 {}".format(self.username, self.password))
             logging.error(error)
             raise error
         except RuntimeError as error:
-            logging.error("current username is {}, current password is {}".format(self.username, self.password))
+            logging.error("当前学号为 {}, 当前密码为 {}".format(self.username, self.password))
             logging.error(error)
             raise error
         return
@@ -117,7 +155,7 @@ class hdu_jwc:
         page = BeautifulSoup(self.index.text, features="html.parser")
         link = page.find('a', text="自主选课")
         if len(link) == 0:
-            logging.error("enter xuanke failed!")
+            logging.error("选课界面进入失败!")
         else:
             link = link["onclick"].split("\'")
             gndm = link[1]
@@ -137,79 +175,81 @@ class hdu_jwc:
             {
                 "filter_list": [jxb_id],
                 "rwlx": str(rwlx),
-                "xkly": "0",
-                "bklx_id": "0",
-                "sfkkjyxdxnxq": "0",
-                "xqh_id": "1",
-                "jg_id": "05",
-                "njdm_id_1": "2020",
-                "zyh_id_1": "0523",
-                "zyh_id": "0523",
-                "zyfx_id": "wfx",
-                "njdm_id": "2020",
-                "bh_id": "20052312",
-                "xbm": "1",
-                "xslbdm": "7",
-                "ccdm": "8",
-                "xsbj": "4294967296",
-                "sfkknj": "1",
-                "sfkkzy": "1",
-                "kzybkxy": "0",
-                "sfznkx": "0",
-                "zdkxms": "0",
-                "sfkxq": "0",
-                "sfkcfx": "0",
-                "kkbk": "0",
-                "kkbkdj": "0",
-                "sfkgbcx": "1",
-                "sfrxtgkcxd": "1",
-                "tykczgxdcs": "1",
-                "xkxnm": "2021",
-                "xkxqm": "12",
+                "xkly": "",
+                "bklx_id": "",
+                "sfkkjyxdxnxq": "",
+                "xqh_id": "",
+                "jg_id": "",
+                "njdm_id_1": "",
+                "zyh_id_1": "",
+                "zyh_id": "",
+                "zyfx_id": "",
+                "njdm_id": "",
+                "bh_id": "",
+                "xbm": "",
+                "xslbdm": "",
+                "ccdm": "",
+                "xsbj": "",
+                "sfkknj": "",
+                "sfkkzy": "",
+                "kzybkxy": "",
+                "sfznkx": "",
+                "zdkxms": "",
+                "sfkxq": "",
+                "sfkcfx": "",
+                "kkbk": "",
+                "kkbkdj": "",
+                "sfkgbcx": "",
+                "sfrxtgkcxd": "",
+                "tykczgxdcs": "",
+                "xkxnm": "",
+                "xkxqm": "",
                 "kklxdm": kklxdm,
-                "rlkz": "0",
-                "xkzgbj": "0",
-                "kspage": "1",
-                "jspage": "10",
+                "rlkz": "",
+                "xkzgbj": "",
+                "kspage": "",
+                "jspage": "",
                 "jxbzb": ""
             }
         data2 = \
             {
                 "filter_list": [jxb_id],
                 "rwlx": str(rwlx),
-                "xkly": "0",
-                "bklx_id": "0",
-                "sfkkjyxdxnxq": "0",
-                "xqh_id": "1",
-                "jg_id": "05",
-                "zyh_id": "0523",
-                "zyfx_id": "wfx",
-                "njdm_id": "2020",
-                "bh_id": "20052312",
-                "xbm": "1",
-                "xslbdm": "7",
-                "ccdm": "8",
-                "xsbj": "4294967296",
-                "sfkknj": "1",
-                "sfkkzy": "1",
-                "kzybkxy": "0",
-                "sfznkx": "0",
-                "zdkxms": "0",
-                "sfkxq": "0",
-                "sfkcfx": "0",
-                "kkbk": "0",
-                "kkbkdj": "0",
-                "xkxnm": "2021",
-                "xkxqm": "12",
-                "xkxskcgskg": "0",
-                "rlkz": "0",
+                "xkly": "",
+                "bklx_id": "",
+                "sfkkjyxdxnxq": "",
+                "xqh_id": "",
+                "jg_id": "",
+                "zyh_id": "",
+                "zyfx_id": "",
+                "njdm_id": "",
+                "bh_id": "",
+                "xbm": "",
+                "xslbdm": "",
+                "ccdm": "",
+                "xsbj": "",
+                "sfkknj": "",
+                "sfkkzy": "",
+                "kzybkxy": "",
+                "sfznkx": "",
+                "zdkxms": "",
+                "sfkxq": "",
+                "sfkcfx": "",
+                "kkbk": "",
+                "kkbkdj": "",
+                "xkxnm": "",
+                "xkxqm": "",
+                "xkxskcgskg": "",
+                "rlkz": "",
                 "kklxdm": kklxdm,
                 "kch_id": jxb_id,
-                "jxbzcxskg": "0",
+                "jxbzcxskg": "",
                 "xkkz_id": self.dict[kklxdm],
-                "cxbj": "0",
-                "fxbj": "0"
+                "cxbj": "",
+                "fxbj": ""
             }
+        self.cfg.get_data(data1)
+        self.cfg.get_data(data2)
         params = {"gnmkdm": "N253512", "su": self.username}
         res1 = \
             self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html", data=data1,
@@ -295,10 +335,28 @@ class hdu_jwc:
 if __name__ == "__main__":
     flag = 0
     exit_flag = True
+    init_cfg_flag = False
+
+    ex = hdu_jwc()
+    if os.path.exists("./config.json"):
+        init_cfg_flag = (input("当前目录下存在配置文件，是否需要重新生成（输入yes以重新生成，否则将加载该配置文件）:\n") == "yes")
+    else:
+        print("当前目录下不存在配置文件，将重新生成该文件")
+        init_cfg_flag = True
+    if init_cfg_flag:
+        ex.init_cfg()
+    while True:
+        if ex.load_cfg("./config.json") == 1:
+            break
+        else:
+            print("将重新生成配置文件！")
+            sys.stdout.flush()
+            ex.init_cfg()
     while flag == 0:
-        username = input("input your username:\n")
-        password = bytes(input("input your password:\n"), encoding="utf-8")
-        ex = hdu_jwc(username, password)
+        username = input("请输入学号:\n")
+        password = bytes(input("请输入密码（教务系统密码）:\n"), encoding="utf-8")
+        ex.username = username
+        ex.password = password
         try:
             ex.set_pubKey()
             ex.set_csrftoken()
@@ -315,13 +373,13 @@ if __name__ == "__main__":
             exit_flag = True
             exit(0)
             continue
-    class_cnt = int(input("请输入待选课数量："))
+    class_cnt = int(input("请输入待选课数量：\n"))
     class_real_cnt = 0
     while class_cnt != class_real_cnt:
-        jxb_id = input("请输入课程代码：")
-        rwlx = input("请输入任务类型代码（主修为1，其它为2）：")
-        kklxdm = input("请输入开课类型代码（主修是01，通识选修是10，体育是05，特殊是09）：")
-        index = input("请输入待选课在本代码中的次序（选课系统中的位次，从1开始）：")
+        jxb_id = input("请输入课程代码：\n")
+        rwlx = input("请输入任务类型代码（主修为1，其它为2）：\n")
+        kklxdm = input("请输入开课类型代码（主修是01，通识选修是10，体育是05，特殊是09）：\n")
+        index = input("请输入待选课在本代码中的次序（选课系统中的位次，从1开始）：\n")
         if ex.add_to_list(jxb_id, int(index), rwlx=rwlx, kklxdm=kklxdm) == 1:
             class_real_cnt = class_real_cnt + 1
     ex.run()
