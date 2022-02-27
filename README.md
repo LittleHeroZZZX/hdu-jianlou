@@ -31,7 +31,6 @@ python ./demo.py
 
 ### 获取网页文件
 
-1.
-安装chrome浏览器拓展程序[Save Page WE](https://chrome.google.com/webstore/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof)
+1. 安装chrome浏览器拓展程序[Save Page WE](https://chrome.google.com/webstore/detail/save-page-we/dhhpefjklgkmgeafimnjhojgjamoafof)
 2. 登录教务系统，进入选课界面
 3. 使用Save Page WE插件保存网页
