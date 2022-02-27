@@ -20,7 +20,7 @@
 
 ```
 cd hdu_jianou
-pip install -i requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 运行程序
