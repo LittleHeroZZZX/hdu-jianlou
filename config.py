@@ -1,3 +1,8 @@
+'''
+Auther: littleherozzzx
+Date: 2022-02-27 10:49:03
+LastEditTime: 2022-03-08 12:15:37
+'''
 import json
 import os
 
@@ -10,8 +15,8 @@ class Cfg:
                      'zyh_id_1': '', 'zyh_id': '', 'zyfx_id': '', 'njdm_id': '', 'bh_id': '', 'xbm': '',
                      'xslbdm': '', 'ccdm': '', 'xsbj': '', 'sfkknj': '', 'sfkkzy': '', 'kzybkxy': '', 'sfznkx': '',
                      'zdkxms': '', 'sfkxq': '', 'sfkcfx': '', 'kkbk': '', 'kkbkdj': '', 'sfkgbcx': '', 'sfrxtgkcxd': '',
-                     'tykczgxdcs': '', 'xkxnm': '', 'xkxqm': '', 'rlkz': '', 'xkzgbj': '', 'jspage': '', 'jxbzb': '',
-                     'xkxskcgskg': '', 'jxbzcxskg': '',
+                     'tykczgxdcs': '', 'xkxnm': '', 'xkxqm': '', 'rlkz': '', 'xkzgbj': '', 'jspage': '', 'jxbzb': '',"bbhzxjxb": "",
+                     'xkxskcgskg': '', 'jxbzcxskg': '',"cxbj":"","fxbj":"","mzm":"",
                      }
 
     def load_cfg(self, path="./config.json"):
@@ -25,6 +30,7 @@ class Cfg:
                 if not data[key] and key != "jxbzb":
                     raise ValueError(f"配置文件中{key}为空！")
             self.data = data
+            self.data["jg_id"] = self.data["jg_id_1"]
         return 1
 
     def init_cfg(self, page_path, cfg_path="config.json"):
@@ -33,7 +39,7 @@ class Cfg:
             page = f.read().encode("utf-8")
         page = bs4.BeautifulSoup(page, features="html.parser")
         for key in self.data.keys():
-            find_key = page.find("input", attrs={"id": key})
+            find_key = page.find("input", attrs={"name": key})
             if not find_key:
                 raise KeyError(f"网页文件中不存在{key}")
             self.data[key] = str(find_key["value"])
@@ -41,8 +47,9 @@ class Cfg:
             f.write(json.dumps(self.data, indent=4))
         return 1
 
-    def get_data(self, keys: dict):
-        dict.update(self.data)
+    def get_data(self, data):
+        for key in data.keys():
+            data[key] = self.data[key]
 
 
 if __name__ == "__main__":

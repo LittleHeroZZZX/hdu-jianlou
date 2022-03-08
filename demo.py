@@ -1,7 +1,7 @@
 '''
 Auther: littleherozzzx
 Date: 2022-01-13 16:48:51
-LastEditTime: 2022-02-18 22:45:07
+LastEditTime: 2022-03-08 12:42:39
 '''
 import base64
 import json
@@ -173,8 +173,6 @@ class hdu_jwc:
     def query_margin(self, jxb_id, kklxdm, rwlx="2", index=0):
         data1 = \
             {
-                "filter_list": [jxb_id],
-                "rwlx": str(rwlx),
                 "xkly": "",
                 "bklx_id": "",
                 "sfkkjyxdxnxq": "",
@@ -204,17 +202,15 @@ class hdu_jwc:
                 "tykczgxdcs": "",
                 "xkxnm": "",
                 "xkxqm": "",
-                "kklxdm": kklxdm,
                 "rlkz": "",
                 "xkzgbj": "",
-                "kspage": "",
                 "jspage": "",
-                "jxbzb": ""
+                "jxbzb": "",
+                "mzm": "",
+                "bbhzxjxb":""
             }
         data2 = \
             {
-                "filter_list": [jxb_id],
-                "rwlx": str(rwlx),
                 "xkly": "",
                 "bklx_id": "",
                 "sfkkjyxdxnxq": "",
@@ -241,22 +237,32 @@ class hdu_jwc:
                 "xkxqm": "",
                 "xkxskcgskg": "",
                 "rlkz": "",
-                "kklxdm": kklxdm,
-                "kch_id": jxb_id,
                 "jxbzcxskg": "",
-                "xkkz_id": self.dict[kklxdm],
                 "cxbj": "",
-                "fxbj": ""
+                "fxbj": "",
+                "mzm": "",
+                "bbhzxjxb":""
             }
         self.cfg.get_data(data1)
         self.cfg.get_data(data2)
+        data1["filter_list"] = [jxb_id]
+        data1["rwlx"] = str(rwlx)
+        data1["kklxdm"] = kklxdm
+        data1["kspage"] = "1"
+
+
         params = {"gnmkdm": "N253512", "su": self.username}
         res1 = \
             self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html", data=data1,
                               params=params).json()["tmpList"]
+        data2["filter_list"] = [jxb_id]
+        data2["rwlx"] = str(rwlx)
+        data2["kklxdm"] = kklxdm
+        data2["kch_id"] = res1[0]["kch_id"]
+        data2["xkkz_id"] = self.dict[kklxdm]
         res2 = self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzbjk_cxJxbWithKchZzxkYzb.html",
                                  data=data2, params=params).json()
-        if index >= len(res1) or index >= len(res2):
+        if index > len(res1) or index > len(res2):
             raise IndexError("不存在该节课")
         return [res1[index], res2[index]]
 
