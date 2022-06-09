@@ -10,7 +10,7 @@ import os.path
 import sys
 import threading
 import time
-
+import pandas as pd
 import requests
 import rsa
 from bs4 import BeautifulSoup
@@ -45,6 +45,7 @@ class hdu_jwc:
         self.pub_key = None
         self.csrftoken = ""
         self.session = requests.Session()
+        self.session.trust_env = False
         self.xuanke = ""
         self.index = ""
         self.class_list = []
@@ -266,6 +267,101 @@ class hdu_jwc:
             raise IndexError("不存在该节课")
         return [res1[index], res2[index]]
 
+    def query_by_class_id(self, jxb_id, kklxdm, rwlx="2"):
+        data1 = \
+            {
+                "xkly": "",
+                "bklx_id": "",
+                "sfkkjyxdxnxq": "",
+                "xqh_id": "",
+                "jg_id": "",
+                "njdm_id_1": "",
+                "zyh_id_1": "",
+                "zyh_id": "",
+                "zyfx_id": "",
+                "njdm_id": "",
+                "bh_id": "",
+                "xbm": "",
+                "xslbdm": "",
+                "ccdm": "",
+                "xsbj": "",
+                "sfkknj": "",
+                "sfkkzy": "",
+                "kzybkxy": "",
+                "sfznkx": "",
+                "zdkxms": "",
+                "sfkxq": "",
+                "sfkcfx": "",
+                "kkbk": "",
+                "kkbkdj": "",
+                "sfkgbcx": "",
+                "sfrxtgkcxd": "",
+                "tykczgxdcs": "",
+                "xkxnm": "",
+                "xkxqm": "",
+                "rlkz": "",
+                "xkzgbj": "",
+                "jspage": "",
+                "jxbzb": "",
+                "mzm": "",
+                "bbhzxjxb":""
+            }
+        data2 = \
+            {
+                "xkly": "",
+                "bklx_id": "",
+                "sfkkjyxdxnxq": "",
+                "xqh_id": "",
+                "jg_id": "",
+                "zyh_id": "",
+                "zyfx_id": "",
+                "njdm_id": "",
+                "bh_id": "",
+                "xbm": "",
+                "xslbdm": "",
+                "ccdm": "",
+                "xsbj": "",
+                "sfkknj": "",
+                "sfkkzy": "",
+                "kzybkxy": "",
+                "sfznkx": "",
+                "zdkxms": "",
+                "sfkxq": "",
+                "sfkcfx": "",
+                "kkbk": "",
+                "kkbkdj": "",
+                "xkxnm": "",
+                "xkxqm": "",
+                "xkxskcgskg": "",
+                "rlkz": "",
+                "jxbzcxskg": "",
+                "cxbj": "",
+                "fxbj": "",
+                "mzm": "",
+                "bbhzxjxb":""
+            }
+        self.cfg.get_data(data1)
+        self.cfg.get_data(data2)
+        data1["filter_list"] = [jxb_id]
+        data1["rwlx"] = str(rwlx)
+        data1["kklxdm"] = kklxdm
+        data1["kspage"] = "1"
+
+
+        params = {"gnmkdm": "N253512", "su": self.username}
+        res1 = \
+            self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html", data=data1,
+                              params=params).json()["tmpList"]
+        data2["filter_list"] = [jxb_id]
+        data2["rwlx"] = str(rwlx)
+        data2["kklxdm"] = kklxdm
+        data2["kch_id"] = res1[0]["kch_id"] if len(res1)>0 else ""
+        data2["xkkz_id"] = self.dict[kklxdm]
+        res2 = self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzbjk_cxJxbWithKchZzxkYzb.html",
+                                 data=data2, params=params).json()
+        return [res1, res2]
+
+
     def qiangke(self, index, times=1000, interval=1):
         (res1, res2) = self.class_list[index]
         data = {
@@ -299,26 +395,34 @@ class hdu_jwc:
                 return 1
         return -1
 
-    def add_to_list(self, jxb_id, index, kklxdm, rwlx):
-        try:
-            [res1, res2] = self.query_margin(jxb_id, rwlx=rwlx, index=index - 1, kklxdm=kklxdm)
-        except IndexError as error:
-            logging.warning("课程编号为{}的课程中不存在第{}个教学班".format(jxb_id, index))
-            print("课程编号为{}的课程中不存在第{}个教学班".format(jxb_id, index))
-            return -1
-        teacher_name = res2["jsxx"]
-        class_time = res2["sksj"]
-        already_picked = res1["yxzrs"]
-        total = res2["jxbrl"]
-        print("课程查找成功！\n请确认信息是否正确：")
-        print("\n" * 2)
-        print(
-            "课程编号为{}\n教师姓名为：{}\n上课时间为：{}\n已选/容量：{}/{}".format(jxb_id, teacher_name, class_time, already_picked, total))
-        print("\n" * 2)
-        if input("输入yes以确认：") == "yes":
-            self.class_list.append((res1, res2))
-            print("添加成功！")
-            return 1
+    def add_to_list(self, jxb_id, kklxdm, rwlx):
+        [res1, res2] = self.query_by_class_id(jxb_id, rwlx=rwlx,  kklxdm=kklxdm)
+        if len(res1) == 0 or len(res2) == 0:
+            print(f"不存在课程代码为{jxb_id}的课程，请核对输入")
+            return False
+        teacher_name = [res["jsxx"] for res in res2]
+        class_time = [res["sksj"] for res in res2]
+        already_picked = [res["yxzrs"] for res in res1]
+        total = [res["jxbrl"] for res in res2]
+        pick_info = [f"{al}/{tltal}" for al, tltal in zip(already_picked, total)]
+        data = pd.DataFrame()
+        data["教师姓名"] = teacher_name
+        data["上课时间"] = class_time
+        data["选课人数"] = pick_info
+        data.index = range(1, len(data) + 1)
+        print(data)
+        opt = input("课程查找成功！请输入需要添加的课程序号，输入0不添加。\n")
+        if opt == "0":
+            return False
+        else:
+            opt = int(opt)
+            if opt not in data.index:
+                print("序号超出范围，添加失败！")
+                return False
+            else:
+                self.class_list.append((res1[opt - 1], res2[opt - 1]))
+                print("添加成功！")
+                return True
 
     def run(self):
         temp = []
@@ -385,7 +489,6 @@ if __name__ == "__main__":
         jxb_id = input("请输入课程代码：\n")
         rwlx = input("请输入任务类型代码（主修为1，其它为2）：\n")
         kklxdm = input("请输入开课类型代码（主修是01，通识选修是10，体育是05，特殊是09）：\n")
-        index = input("请输入待选课在本代码中的次序（选课系统中的位次，从1开始）：\n")
-        if ex.add_to_list(jxb_id, int(index), rwlx=rwlx, kklxdm=kklxdm) == 1:
+        if ex.add_to_list(jxb_id, rwlx=rwlx, kklxdm=kklxdm) == 1:
             class_real_cnt = class_real_cnt + 1
     ex.run()
