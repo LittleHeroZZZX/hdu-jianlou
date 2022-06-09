@@ -13,6 +13,7 @@ import time
 import pandas as pd
 import requests
 import rsa
+from getpass4 import getpass
 from bs4 import BeautifulSoup
 
 import config
@@ -464,7 +465,8 @@ if __name__ == "__main__":
             ex.init_cfg()
     while flag == 0:
         username = input("请输入学号:\n")
-        password = bytes(input("请输入密码（教务系统密码）:\n"), encoding="utf-8")
+        password = getpass("请输入密码:\n")
+        password = bytes(password, encoding="utf-8")
         ex.username = username
         ex.password = password
         try:

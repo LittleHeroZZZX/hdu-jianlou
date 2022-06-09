@@ -1,3 +1,4 @@
 beautifulsoup4==4.10.0
 requests==2.25.1
 rsa~=4.7.2
+getpass4==0.0.14.1
