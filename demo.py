@@ -156,16 +156,14 @@ class hdu_jwc:
     def login_course_selection(self):
         page = BeautifulSoup(self.index.text, features="html.parser")
         link = page.find('a', text="自主选课")
-        if len(link) == 0:
-            logging.error("选课界面进入失败!")
-        else:
-            link = link["onclick"].split("\'")
-            gndm = link[1]
-            url = self.url + link[3]
-            params = {"gnmkdm": "index", "su": self.username, "layout": "default"}
-            data = {"gndm": gndm}
-            response = self.session.get(url=url, data=data, params=params)
-            return response
+
+        link = link["onclick"].split("\'")
+        gndm = link[1]
+        url = self.url + link[3]
+        params = {"gnmkdm": "index", "su": self.username, "layout": "default"}
+        data = {"gndm": gndm}
+        response = self.session.get(url=url, data=data, params=params)
+        return response
 
     def logout(self):
         params = {"t": str(round(time.time() * 1000)), "login_type": ""}
