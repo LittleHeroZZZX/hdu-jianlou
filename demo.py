@@ -207,7 +207,8 @@ class hdu_jwc:
                 "jspage": "",
                 "jxbzb": "",
                 "mzm": "",
-                "bbhzxjxb":""
+                "bbhzxjxb":"",
+                "xz":""
             }
         data2 = \
             {
@@ -241,7 +242,9 @@ class hdu_jwc:
                 "cxbj": "",
                 "fxbj": "",
                 "mzm": "",
-                "bbhzxjxb":""
+                "bbhzxjxb":"",
+                "xz":""
+                
             }
         self.cfg.get_data(data1)
         self.cfg.get_data(data2)
@@ -303,7 +306,8 @@ class hdu_jwc:
                 "jspage": "",
                 "jxbzb": "",
                 "mzm": "",
-                "bbhzxjxb":""
+                "bbhzxjxb":"",
+                "xz":""
             }
         data2 = \
             {
@@ -337,7 +341,8 @@ class hdu_jwc:
                 "cxbj": "",
                 "fxbj": "",
                 "mzm": "",
-                "bbhzxjxb":""
+                "bbhzxjxb":"",
+                "xz":""
             }
         self.cfg.get_data(data1)
         self.cfg.get_data(data2)
