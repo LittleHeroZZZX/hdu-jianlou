@@ -408,8 +408,8 @@ class hdu_jwc:
         for cnt in range(times):
             res = self.session.post(url="http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzbjk_xkBcZyZzxkYzb.html", data=data,
                                     params=params).json()
-            if res["flag"] == -1:
-                logging.info("当前人数已满！")
+            if res["flag"] == "-1":
+                logging.info("cnt={}: ".format(cnt) + "人数已满")
             else:
                 logging.info("cnt={}: ".format(cnt) + str(res))
             time.sleep(interval)
@@ -449,19 +449,22 @@ class hdu_jwc:
 
     def run(self):
         temp = []
-        while len(self.class_list):
-            for index in range(len(self.class_list)):
-                th = threading.Thread(target=self.qiangke, args=[index])
-                th.start()
-                temp.append(th)
-            for th in temp:
-                th.join()
-            temp.clear()
+        try:
+            while len(self.class_list):
+                for index in range(len(self.class_list)):
+                    th = threading.Thread(target=self.qiangke, args=[index])
+                    th.start()
+                    temp.append(th)
+                for th in temp:
+                    th.join()
+                temp.clear()
+        except:
             self.logout()
             self.set_pubKey()
             self.set_csrftoken()
             self.login()
             self.login_course_selection()
+            self.run()
         print("所有课均已选上！")
 
 
