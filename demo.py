@@ -13,6 +13,7 @@ import time
 import pandas as pd
 import requests
 import rsa
+import yaml
 from getpass4 import getpass
 from bs4 import BeautifulSoup
 
@@ -46,14 +47,15 @@ class hdu_jwc:
         self.pub_key = None
         self.csrftoken = ""
         self.session = requests.Session()
+        self.session.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:97.0) Gecko/20100101 Firefox/97.0"
         self.session.trust_env = False
         self.xuanke = ""
         self.index = ""
         self.class_list = []
         self.dict = {
-            "01": "D3CA48E77A1A4CD8E0536164A8C05380",
-            "10": "D3C989F2C90BEA2DE0536164A8C0923B",
-            "05": "D3DDE00D83CA15A1E0536264A8C0CBAE",
+            "01": "E0BE1EB065FBFA29E0536264A8C04A31",
+            "10": "E0BDC4C7604BD44BE0536264A8C0B7EC",
+            "05": "E0BE43551AEB415FE0536164A8C06426",
         }
         self.cfg = config.Cfg()
 
@@ -156,7 +158,7 @@ class hdu_jwc:
     def login_course_selection(self):
         page = BeautifulSoup(self.index.text, features="html.parser")
         link = page.find('a', text="自主选课")
-
+                  
         link = link["onclick"].split("\'")
         gndm = link[1]
         url = self.url + link[3]
@@ -382,8 +384,25 @@ class hdu_jwc:
             "xkkz_id": self.dict[kklxdm],
             "njdm_id": "2020",
             "zyh_id": "0523",
-            "kklxdm": kklxdm
+            "kklxdm": kklxdm,
+            "xklc" : "2",
+            "xkxnm": "2022",
+            "xkxqm": "3"
         }
+        # headers = {
+        #    "Accept": "application/json, text/javascript, */*; q=0.01"
+        #    "Accept-Encoding": "gzip, deflate"
+        #    "Accept-Language": "en,zh-CN;q=0.9,zh;q=0.8"
+        #    "Connection": "keep-alive"
+        #    "Content-Length": "552"
+        #    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+        #    "Cookie": "JSESSIONID=76EAADA342699A32AF7748779A92EC38; route=5063706ecbac8c9154cb45c088a91202"
+        #    "Host": "newjw.hdu.edu.cn"
+        #    "Origin": "http://newjw.hdu.edu.cn"
+        #    "Referer": "http://newjw.hdu.edu.cn/jwglxt/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su=20051336"
+        #    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+        #    "X-Requested-With": XMLHttpRequest"
+        # }
         params = {"gnmkdm": "N253512", "su": self.username}
         res = {"flag": 0}
         for cnt in range(times):

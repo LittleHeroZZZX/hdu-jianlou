@@ -16,7 +16,7 @@ class Cfg:
                      'xslbdm': '', 'ccdm': '', 'xsbj': '', 'sfkknj': '', 'sfkkzy': '', 'kzybkxy': '', 'sfznkx': '',
                      'zdkxms': '', 'sfkxq': '', 'sfkcfx': '', 'kkbk': '', 'kkbkdj': '', 'sfkgbcx': '', 'sfrxtgkcxd': '',
                      'tykczgxdcs': '', 'xkxnm': '', 'xkxqm': '', 'rlkz': '', 'xkzgbj': '', 'jspage': '', 'jxbzb': '',"bbhzxjxb": "",
-                     'xkxskcgskg': '', 'jxbzcxskg': '',"cxbj":"","fxbj":"","mzm":"",
+                     'xkxskcgskg': '', 'jxbzcxskg': '',"cxbj":"","fxbj":"","mzm":"","xz":"",
                      }
 
     def load_cfg(self, path="./config.json"):
